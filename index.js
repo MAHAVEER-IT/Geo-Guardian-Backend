@@ -383,11 +383,8 @@ app.delete('/api/zones/:id', async (req, res) => {
 // ==================== SOCKET.IO RELAY LOGIC ====================
 
 io.on('connection', (socket) => {
-  console.log('🔌 Client connected:', socket.id);
-  
   // Listen for mobile danger alerts
   socket.on('mobile_danger_alert', (data) => {
-    console.log('⚠️  DANGER ALERT RECEIVED:', data);
     
     // Broadcast to all connected admin clients
     io.emit('admin_alert', {
@@ -399,7 +396,7 @@ io.on('connection', (socket) => {
   });
   
   socket.on('disconnect', () => {
-    console.log('🔌 Client disconnected:', socket.id);
+    // Client disconnected
   });
 });
 
