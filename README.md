@@ -56,7 +56,7 @@
 3. **Environment Variables** (in Render Dashboard):
    ```
    NODE_ENV=production
-   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/geoguardian?retryWrites=true&w=majority
+   MONGODB_URI= YOUR_MONGODB_URI
    PORT=5000
    ```
 
