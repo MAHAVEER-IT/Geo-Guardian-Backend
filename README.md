@@ -1,111 +1,245 @@
-# 🛡️ Geo-Guardian Server - Production Deployment Guide
+# Geo-Guardian Backend Server
 
-## 🚀 Production-Ready Features
-
-### ✅ Security
-- ✅ CORS configuration with whitelisted origins
-- ✅ Security headers (X-Frame-Options, X-XSS-Protection, CSP)
-- ✅ Request body size limits (10MB)
-- ✅ Rate limiting (100 req/min in production)
-- ✅ Input validation and sanitization
-- ✅ Error message sanitization (no stack traces in production)
-
-### ✅ Reliability
-- ✅ MongoDB connection retry logic (5 attempts)
-- ✅ Graceful shutdown handling
-- ✅ Connection event monitoring
-- ✅ Health check endpoint with DB status
-- ✅ Unhandled rejection and exception handlers
-
-### ✅ Performance
-- ✅ Geospatial indexes (2dsphere)
-- ✅ Lean queries for better performance
-- ✅ Connection pooling
-- ✅ Efficient rate limiting cleanup
-
-### ✅ Monitoring
-- ✅ Request logging with timestamps and IP
-- ✅ Error logging
-- ✅ Health check at `/health`
-- ✅ Database connection status monitoring
+**Production-ready Node.js backend server for the Geo-Guardian geofencing safety system.**
 
 ---
 
-## 📋 Pre-Deployment Checklist
+## Overview
 
-- [ ] MongoDB Atlas cluster created and accessible
-- [ ] Environment variables configured
-- [ ] CORS origins updated for production domain
-- [ ] Node.js version >= 16.0.0
-- [ ] All dependencies installed
-- [ ] Health check endpoint tested
+The Geo-Guardian backend provides RESTful APIs and real-time WebSocket communication for managing danger zones and alerting systems. It serves both the web-based admin dashboard and mobile tourist application.
+
+### Related Repositories
+
+- **Admin Dashboard (Web)**: [https://github.com/MAHAVEER-IT/Geo-Guardian.git](https://github.com/MAHAVEER-IT/Geo-Guardian.git)
+- **Mobile Application (Flutter)**: [https://github.com/MAHAVEER-IT/Geo-Guardian-App.git](https://github.com/MAHAVEER-IT/Geo-Guardian-App.git)
 
 ---
 
-## 🌍 Deployment Options
+## Technology Stack
 
-### Option 1: Render (Recommended)
+- **Runtime**: Node.js (v16+)
+- **Framework**: Express.js
+- **Database**: MongoDB with Mongoose ODM
+- **Real-time**: Socket.IO
+- **Security**: CORS, Rate Limiting, Security Headers
 
-1. **Create Render Account**: https://render.com
-2. **Create New Web Service**:
-   - Connect GitHub repository
-   - Select `server` folder as root directory
-   - Build Command: `npm install`
-   - Start Command: `npm start`
+---
 
-3. **Environment Variables** (in Render Dashboard):
+## Features
+
+### Security
+- CORS with whitelisted origins
+- Security headers (X-Frame-Options, XSS Protection, HSTS)
+- Request size limits (10MB)
+- Rate limiting (100 requests/minute in production)
+- Input validation and sanitization
+- Safe error handling (no stack traces in production)
+
+### Reliability
+- MongoDB connection retry logic (5 attempts)
+- Graceful shutdown handling
+- Connection monitoring and auto-reconnect
+- Health check endpoint
+- Unhandled rejection and exception handlers
+
+### Performance
+- Geospatial indexes (2dsphere) for fast location queries
+- Mongoose lean queries
+- Connection pooling
+- Efficient rate limit cleanup
+
+### Monitoring
+- Health check at `/health` with database status
+- Error logging
+- Production/development environment detection
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js v16.0.0 or higher
+- MongoDB Atlas account or local MongoDB instance
+- Git
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/MAHAVEER-IT/Geo-Guardian.git
+   cd Geo-Guardian/server
    ```
-   NODE_ENV=production
-   MONGODB_URI= YOUR_MONGODB_URI
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment variables**
+   
+   Create a `.env` file in the server directory:
+   ```env
+   NODE_ENV=development
+   MONGODB_URI=mongodb://localhost:27017/geoguardian
    PORT=5000
    ```
 
-4. **Deploy**: Render will auto-deploy on every push to main branch
-
-### Option 2: Railway
-
-1. **Create Railway Account**: https://railway.app
-2. **New Project** → **Deploy from GitHub**
-3. **Set Environment Variables**:
-   - `NODE_ENV=production`
-   - `MONGODB_URI=your_mongodb_uri`
-   - `PORT=5000`
-
-4. **Deploy**: Railway auto-detects and deploys
-
-### Option 3: Heroku
-
-1. **Install Heroku CLI**
-2. **Commands**:
+4. **Start the server**
    ```bash
-   heroku login
-   heroku create geoguardian-api
-   heroku config:set NODE_ENV=production
-   heroku config:set MONGODB_URI=your_mongodb_uri
-   git push heroku main
+   # Development mode
+   npm start
+
+   # Production mode
+   NODE_ENV=production npm start
    ```
 
-### Option 4: VPS (DigitalOcean, AWS EC2, Linode)
-
-1. **SSH into server**
-2. **Install Node.js and npm**
-3. **Clone repository**
-4. **Install dependencies**: `npm install --production`
-5. **Set up PM2** (Process Manager):
-   ```bash
-   npm install -g pm2
-   pm2 start index.js --name geoguardian-server
-   pm2 startup
-   pm2 save
-   ```
-6. **Configure nginx** as reverse proxy
-7. **Set up SSL** with Let's Encrypt
+5. **Verify installation**
+   
+   Open your browser and navigate to:
+   - Server info: `http://localhost:5000`
+   - Health check: `http://localhost:5000/health`
 
 ---
 
-## ⚙️ Environment Variables
+## API Documentation
 
-Create a `.env` file (use `.env.example` as template):
+### Base URL
+```
+Development: http://localhost:5000
+Production: https://your-domain.com
+```
+
+### Endpoints
+
+#### Server Status
+
+| Method | Endpoint | Description | Response |
+|--------|----------|-------------|----------|
+| `GET` | `/` | Server information | `{ message, status, version, environment }` |
+| `GET` | `/health` | Health check with DB status | `{ uptime, timestamp, status, database }` |
+
+#### Zone Management
+
+| Method | Endpoint | Description | Request Body |
+|--------|----------|-------------|--------------|
+| `GET` | `/api/zones` | Retrieve all danger zones | - |
+| `POST` | `/api/zones` | Create a new danger zone | `{ name, geometry }` |
+| `DELETE` | `/api/zones/:id` | Delete a specific zone | - |
+
+#### Geospatial Queries
+
+| Method | Endpoint | Description | Parameters |
+|--------|----------|-------------|------------|
+| `GET` | `/api/zones/nearby` | Get zones near a location | `lat, lng, maxDistance` (query) |
+| `POST` | `/api/zones/check` | Check if point is in danger zone | `{ lat, lng }` (body) |
+| `GET` | `/api/zones/within` | Get zones in bounding box | `minLat, minLng, maxLat, maxLng` (query) |
+
+### Request Examples
+
+#### Create a Danger Zone
+```bash
+POST /api/zones
+Content-Type: application/json
+
+{
+  "name": "Construction Area",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [77.5946, 12.9716],
+        [77.5956, 12.9716],
+        [77.5956, 12.9726],
+        [77.5946, 12.9726],
+        [77.5946, 12.9716]
+      ]
+    ]
+  }
+}
+```
+
+#### Check if Location is in Danger Zone
+```bash
+POST /api/zones/check
+Content-Type: application/json
+
+{
+  "lat": 12.9716,
+  "lng": 77.5946
+}
+```
+
+#### Get Nearby Zones
+```bash
+GET /api/zones/nearby?lat=12.9716&lng=77.5946&maxDistance=5000
+```
+
+### Response Format
+
+All API responses follow this structure:
+
+**Success Response:**
+```json
+{
+  "success": true,
+  "message": "Operation completed successfully",
+  "data": { ... }
+}
+```
+
+**Error Response:**
+```json
+{
+  "success": false,
+  "message": "Error description"
+}
+```
+
+---
+
+## Socket.IO Events
+
+### Client → Server
+
+**Event:** `mobile_danger_alert`
+
+Emitted when a mobile user enters a danger zone.
+
+```javascript
+socket.emit('mobile_danger_alert', {
+  message: 'User entered danger zone',
+  location: { lat: 12.9716, lng: 77.5946 },
+  userId: 'user123',
+  timestamp: '2026-02-27T10:30:00Z'
+});
+```
+
+### Server → Client
+
+**Event:** `admin_alert`
+
+Broadcasted to all connected admin clients when a danger alert is received.
+
+```javascript
+socket.on('admin_alert', (data) => {
+  console.log(data);
+  // {
+  //   message: 'Tourist entered Danger Zone',
+  //   location: { lat: 12.9716, lng: 77.5946 },
+  //   timestamp: '2026-02-27T10:30:00Z',
+  //   severity: 'critical'
+  // }
+});
+```
+
+---
+
+## Production Deployment
+
+### Environment Variables
+
+Required variables for production:
 
 ```env
 NODE_ENV=production
@@ -113,18 +247,85 @@ MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/geoguardian?retr
 PORT=5000
 ```
 
-**Important**: Never commit `.env` file to Git!
+**Important:** Never commit `.env` files to version control.
+
+### Deployment Platforms
+
+#### Option 1: Render (Recommended)
+
+1. Create account at [https://render.com](https://render.com)
+2. Create new Web Service from GitHub repository
+3. Configuration:
+   - **Root Directory**: `server`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+4. Add environment variables in Render dashboard
+5. Deploy
+
+#### Option 2: Railway
+
+1. Create account at [https://railway.app](https://railway.app)
+2. Create new project from GitHub
+3. Set environment variables
+4. Railway auto-detects and deploys
+
+#### Option 3: Heroku
+
+```bash
+heroku login
+heroku create geoguardian-api
+heroku config:set NODE_ENV=production
+heroku config:set MONGODB_URI=your_mongodb_uri
+git push heroku main
+```
+
+#### Option 4: VPS (DigitalOcean, AWS EC2)
+
+```bash
+# Install Node.js and npm
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Clone and setup
+git clone https://github.com/MAHAVEER-IT/Geo-Guardian.git
+cd Geo-Guardian/server
+npm install --production
+
+# Install PM2
+sudo npm install -g pm2
+pm2 start index.js --name geoguardian-server
+pm2 startup
+pm2 save
+
+# Setup Nginx reverse proxy and SSL
+```
+
+### MongoDB Atlas Setup
+
+1. Create cluster at [https://cloud.mongodb.com](https://cloud.mongodb.com)
+2. Create database user
+3. Whitelist IP addresses:
+   - For serverless deployments (Render, Railway): `0.0.0.0/0`
+   - For VPS: Your server's IP address
+4. Copy connection string and update `MONGODB_URI`
+
+### CORS Configuration
+
+Update the `allowedOrigins` array in `index.js`:
+
+```javascript
+const allowedOrigins = [
+  'https://your-frontend-domain.com',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+```
 
 ---
 
-## 🧪 Testing Before Deployment
+## Testing
 
-### 1. Test Locally in Production Mode
-```bash
-NODE_ENV=production npm start
-```
-
-### 2. Test Health Check
+### Health Check
 ```bash
 curl http://localhost:5000/health
 ```
@@ -133,139 +334,157 @@ Expected response:
 ```json
 {
   "uptime": 123.456,
-  "timestamp": "2026-02-21T...",
+  "timestamp": "2026-02-27T10:30:00.000Z",
   "status": "active",
   "database": "connected"
 }
 ```
 
-### 3. Test API Endpoints
+### Rate Limiting Test
 ```bash
-# Get all zones
-curl http://localhost:5000/api/zones
-
-# Health check
-curl http://localhost:5000/health
-
-# Create zone (POST)
-curl -X POST http://localhost:5000/api/zones \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Test Zone","geometry":{"type":"Polygon","coordinates":[[[0,0],[1,0],[1,1],[0,1],[0,0]]]}}'
-```
-
-### 4. Test Rate Limiting
-Run this multiple times quickly (should hit rate limit):
-```bash
+# Should trigger rate limit after 100 requests
 for i in {1..150}; do curl http://localhost:5000/api/zones; done
 ```
 
 ---
 
-## 🔒 Security Best Practices
+## Project Structure
 
-1. **Never expose .env file** - Already in .gitignore
-2. **Use strong MongoDB passwords**
-3. **Enable MongoDB IP whitelist** (or allow all IPs: 0.0.0.0/0 for serverless)
-4. **Keep dependencies updated**: `npm audit fix`
-5. **Monitor logs** regularly
-6. **Set up alerts** for downtime
-
----
-
-## 📊 Monitoring After Deployment
-
-### Health Checks
-- **Endpoint**: `https://your-domain.com/health`
-- **Check**: Database connectivity, uptime
-- **Set up external monitoring**: UptimeRobot, Pingdom
-
-### Logs
-- **Render**: View logs in dashboard
-- **Railway**: View logs in project dashboard
-- **Heroku**: `heroku logs --tail`
-- **VPS/PM2**: `pm2 logs geoguardian-server`
-
----
-
-## 🚨 Common Issues & Solutions
-
-### Issue 1: "Cannot connect to MongoDB"
-**Solution**: 
-- Check MongoDB URI is correct
-- Verify IP whitelist in MongoDB Atlas (allow 0.0.0.0/0 for Render/Railway)
-- Check network connectivity
-
-### Issue 2: "CORS error from frontend"
-**Solution**: 
-- Update `allowedOrigins` array in index.js with your frontend domain
-- Example: `'https://your-frontend.netlify.app'`
-
-### Issue 3: "Rate limit too restrictive"
-**Solution**: 
-- Adjust `MAX_REQUESTS` constant in index.js
-- Or disable rate limiting for trusted origins
-
-### Issue 4: "Port already in use"
-**Solution**: 
-- Change PORT in .env
-- Or use: `PORT=3000 npm start`
-
----
-
-## 📝 API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/` | Server info |
-| GET | `/health` | Health check with DB status |
-| GET | `/api/zones` | Get all zones |
-| POST | `/api/zones` | Create zone |
-| DELETE | `/api/zones/:id` | Delete zone |
-| GET | `/api/zones/nearby` | Get nearby zones (geospatial) |
-| POST | `/api/zones/check` | Check if point in zone |
-| GET | `/api/zones/within` | Get zones in bounding box |
-
----
-
-## 🔄 Updating Production
-
-### Auto-deploy (Render/Railway/Heroku)
-1. Push to GitHub main branch
-2. Platform auto-deploys
-
-### Manual (VPS)
-```bash
-ssh user@server
-cd geoguardian-server
-git pull
-npm install --production
-pm2 restart geoguardian-server
+```
+server/
+├── index.js                # Main server entry point
+├── models/
+│   └── Zone.js            # MongoDB schema for danger zones
+├── routes/
+│   └── zoneRoutes.js      # Zone API endpoints
+├── socket/
+│   └── socketHandler.js   # Socket.IO event handlers
+├── .env.example           # Environment variable template
+├── .gitignore
+├── package.json
+└── README.md
 ```
 
 ---
 
-## 📞 Support
+## Monitoring & Maintenance
 
-For issues, check:
-1. Server logs
-2. MongoDB Atlas metrics
-3. Health check endpoint
-4. Network connectivity
+### Health Monitoring
+
+Set up external monitoring using:
+- **UptimeRobot**: [https://uptimerobot.com](https://uptimerobot.com)
+- **Pingdom**: [https://www.pingdom.com](https://www.pingdom.com)
+
+Monitor endpoint: `https://your-domain.com/health`
+
+### Logs
+
+**Platform-specific log access:**
+- Render: Dashboard → Logs tab
+- Railway: Project → Deployments → Logs
+- Heroku: `heroku logs --tail`
+- VPS with PM2: `pm2 logs geoguardian-server`
+
+### Database Maintenance
+
+- Monitor MongoDB Atlas metrics
+- Set up automated backups
+- Review slow queries
+- Check index usage
 
 ---
 
-## ✅ Deployment Verification
+## Troubleshooting
+
+### Cannot Connect to MongoDB
+
+**Symptoms:** Server fails to start or crashes with connection errors
+
+**Solutions:**
+- Verify `MONGODB_URI` is correct
+- Check MongoDB Atlas IP whitelist
+- Ensure database user has correct permissions
+- Check network connectivity
+
+### CORS Errors from Frontend
+
+**Symptoms:** Browser console shows CORS policy errors
+
+**Solutions:**
+- Add frontend domain to `allowedOrigins` in `index.js`
+- Ensure credentials are enabled in frontend requests
+- Redeploy server after changes
+
+### Rate Limit Too Restrictive
+
+**Symptoms:** Clients receiving 429 (Too Many Requests) errors
+
+**Solutions:**
+- Increase `MAX_REQUESTS` constant in `index.js`
+- Adjust `RATE_LIMIT_WINDOW` duration
+- Implement per-user rate limiting instead of per-IP
+
+### Socket.IO Connection Failed
+
+**Symptoms:** Real-time alerts not working
+
+**Solutions:**
+- Verify Socket.IO client uses correct server URL
+- Check CORS configuration includes Socket.IO origin
+- Ensure WebSocket protocol is allowed by hosting platform
+
+---
+
+## Security Best Practices
+
+1. **Environment Variables**: Never commit `.env` files
+2. **Database Security**: Use strong passwords, enable IP whitelist
+3. **Dependencies**: Run `npm audit fix` regularly
+4. **HTTPS**: Always use SSL certificates in production
+5. **Monitoring**: Set up alerts for unusual activity
+6. **Backups**: Configure automated database backups
+7. **Access Control**: Limit database user permissions
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/improvement`)
+3. Commit changes (`git commit -am 'Add new feature'`)
+4. Push to branch (`git push origin feature/improvement`)
+5. Open a Pull Request
+
+---
+
+## License
+
+This project is licensed under the MIT License.
+
+---
+
+## Support
+
+For issues and questions:
+- **GitHub Issues**: [Geo-Guardian Issues](https://github.com/MAHAVEER-IT/Geo-Guardian/issues)
+- **Email**: support@geoguardian.com (if applicable)
+
+---
+
+## Deployment Verification Checklist
 
 After deployment, verify:
 
-- [ ] Health check returns 200 status
-- [ ] Database shows "connected"
-- [ ] `/api/zones` returns data
-- [ ] Socket.IO connects successfully
+- [ ] Health check returns 200 status code
+- [ ] Database connection shows "connected"
+- [ ] GET `/api/zones` returns data or empty array
+- [ ] Socket.IO connects successfully from client
 - [ ] CORS allows frontend requests
-- [ ] Rate limiting works
-- [ ] Error handling doesn't expose sensitive info
+- [ ] Rate limiting is functional
+- [ ] Error responses don't expose sensitive information
+- [ ] Environment is set to "production"
 
 ---
 
-**🎉 Your server is production-ready!**
+**Server Version:** 1.0.0  
+**Last Updated:** February 2026
