@@ -6,10 +6,13 @@
 const initializeSocketHandlers = (io) => {
   io.on('connection', (socket) => {
     socket.on('mobile_danger_alert', (data) => {
+      const lat = data?.location?.lat ?? data?.lat ?? null;
+      const lng = data?.location?.lng ?? data?.lng ?? null;
+
       io.emit('admin_alert', {
-        message: data.message || 'Tourist entered Danger Zone',
-        location: data.location || null,
-        timestamp: new Date().toISOString(),
+        message: data?.message || data?.msg || 'Tourist entered Danger Zone',
+        location: lat != null && lng != null ? { lat, lng } : null,
+        timestamp: data?.timestamp || new Date().toISOString(),
         severity: 'critical'
       });
     });
