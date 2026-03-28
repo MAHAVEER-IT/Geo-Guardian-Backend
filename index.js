@@ -15,17 +15,44 @@ const server = http.createServer(app);
 // Production Environment Check
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Allowed origins for CORS
+// Allowed origins for CORS (exact domains + optional patterns)
+const configuredOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const allowedOrigins = [
   'https://geo-guardian.netlify.app',
   'http://localhost:5173',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  ...configuredOrigins,
 ];
+
+const allowedOriginPatterns = [
+  /^https:\/\/[a-z0-9-]+\.netlify\.app$/i,
+  /^https:\/\/[a-z0-9-]+\.vercel\.app$/i,
+];
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+
+  if (allowedOrigins.includes(origin)) {
+    return true;
+  }
+
+  return allowedOriginPatterns.some((pattern) => pattern.test(origin));
+};
 
 // Socket.io setup with CORS
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (isAllowedOrigin(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by Socket.IO CORS'));
+      }
+    },
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -35,9 +62,7 @@ const io = new Server(server, {
 app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (isAllowedOrigin(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
