@@ -4,7 +4,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.use(authenticate, requireRole('master_admin'));
+router.use(authenticate, requireRole('master_admin', 'admin'));
 
 router.get('/', async (req, res) => {
   try {
@@ -25,6 +25,13 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
+    if (req.user.role !== 'master_admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only master admin can create users',
+      });
+    }
+
     const { email, password, role } = req.body;
 
     const normalizedEmail = String(email || '').trim().toLowerCase();
@@ -101,6 +108,15 @@ router.patch('/:id/role', async (req, res) => {
       });
     }
 
+    if (req.user.role === 'admin') {
+      if (role !== 'admin' || user.role !== 'volunteer') {
+        return res.status(403).json({
+          success: false,
+          message: 'Admin can only promote volunteer to admin',
+        });
+      }
+    }
+
     user.role = role;
     await user.save();
 
@@ -120,6 +136,13 @@ router.patch('/:id/role', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
+    if (req.user.role !== 'master_admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only master admin can remove users',
+      });
+    }
+
     const { id } = req.params;
 
     const user = await User.findById(id);
