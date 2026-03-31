@@ -6,8 +6,11 @@ const { Server } = require('socket.io');
 require('dotenv').config();
 
 // Import routes and handlers
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
 const zoneRoutes = require('./routes/zoneRoutes');
 const initializeSocketHandlers = require('./socket/socketHandler');
+const ensureMasterAdmin = require('./services/seedMasterAdmin');
 
 const app = express();
 const server = http.createServer(app);
@@ -15,10 +18,12 @@ const server = http.createServer(app);
 // Production Environment Check
 const isProduction = process.env.NODE_ENV === 'production';
 
+const normalizeOrigin = (origin) => String(origin || '').trim().replace(/\/$/, '');
+
 // Allowed origins for CORS (exact domains + optional patterns)
 const configuredOrigins = (process.env.CORS_ORIGINS || '')
   .split(',')
-  .map((origin) => origin.trim())
+  .map((origin) => normalizeOrigin(origin))
   .filter(Boolean);
 
 const allowedOrigins = [
@@ -26,7 +31,7 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
   ...configuredOrigins,
-];
+].map((origin) => normalizeOrigin(origin));
 
 const allowedOriginPatterns = [
   /^https:\/\/[a-z0-9-]+\.netlify\.app$/i,
@@ -36,11 +41,13 @@ const allowedOriginPatterns = [
 const isAllowedOrigin = (origin) => {
   if (!origin) return true;
 
-  if (allowedOrigins.includes(origin)) {
+  const normalizedOrigin = normalizeOrigin(origin);
+
+  if (allowedOrigins.includes(normalizedOrigin)) {
     return true;
   }
 
-  return allowedOriginPatterns.some((pattern) => pattern.test(origin));
+  return allowedOriginPatterns.some((pattern) => pattern.test(normalizedOrigin));
 };
 
 // Socket.io setup with CORS
@@ -153,7 +160,17 @@ mongoose.connection.on('error', (err) => {
   console.error('MongoDB error:', err.message);
 });
 
+mongoose.connection.once('open', async () => {
+  try {
+    await ensureMasterAdmin();
+  } catch (error) {
+    console.error('Failed to seed master admin:', error.message);
+  }
+});
+
 // Mount zone routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/zones', zoneRoutes);
 
 // Initialize Socket.IO event handlers
