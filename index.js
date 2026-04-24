@@ -6,11 +6,8 @@ const { Server } = require('socket.io');
 require('dotenv').config();
 
 // Import routes and handlers
-const authRoutes = require('./routes/authRoutes');
-const userRoutes = require('./routes/userRoutes');
 const zoneRoutes = require('./routes/zoneRoutes');
 const initializeSocketHandlers = require('./socket/socketHandler');
-const ensureMasterAdmin = require('./services/seedMasterAdmin');
 
 const app = express();
 const server = http.createServer(app);
@@ -160,17 +157,7 @@ mongoose.connection.on('error', (err) => {
   console.error('MongoDB error:', err.message);
 });
 
-mongoose.connection.once('open', async () => {
-  try {
-    await ensureMasterAdmin();
-  } catch (error) {
-    console.error('Failed to seed master admin:', error.message);
-  }
-});
-
-// Mount zone routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
+// Mount routes
 app.use('/api/zones', zoneRoutes);
 
 // Initialize Socket.IO event handlers
